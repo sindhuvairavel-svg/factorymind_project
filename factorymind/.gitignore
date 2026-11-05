@@ -1,0 +1,9 @@
+__pycache__/
+data/*.csv
+data/*.db
+artifacts/*.joblib
+mlruns/
+venv/
+__pycache__/
+artifacts/
+data/
