@@ -1,194 +1,400 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FactoryMind · Gold Edition</title>
-    <style>
-    :root{--bg:#060608;--card:#101013;--bd:#33290f;--g:#d4af37;--g2:#f3d77a;--tx:#f1ead6;--mu:#a79a73;--ok:#22c55e;--wa:#f59e0b;--cr:#ef4444}
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(#15110a,#060608 70%) fixed;color:var(--tx);font:14px/1.5 system-ui,Segoe UI,sans-serif}
-    .w{max-width:1150px;margin:0 auto;padding:14px}h1{margin:0;font-size:26px;letter-spacing:1px;background:linear-gradient(90deg,#f3d77a,#b8891a);-webkit-background-clip:text;background-clip:text;color:transparent}
-    h2{font-size:14px;margin:0 0 8px;color:var(--g);text-transform:uppercase;letter-spacing:1px}.mu,small{color:var(--mu);font-size:12px}
-    .c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 0 18px #d4af3710}
-    .row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 130px}.two>*{flex:1 1 440px}.big{font-size:26px;font-weight:700;color:var(--g2)}
-    .k{background:#0b0b0d;border:1px solid var(--bd);border-radius:10px;padding:10px}
-    canvas.gl{width:100%;height:350px;display:block;border-radius:10px;background:radial-gradient(#241b06,#050505);touch-action:none;cursor:grab;border:1px solid var(--bd)}
-    table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;border-bottom:1px solid var(--bd);text-align:left}th{color:var(--g)}tr.r{cursor:pointer}tr.r:hover{background:#d4af3715}
-    .bar{height:10px;background:#201a09;border-radius:5px;overflow:hidden}.bar i{display:block;height:100%}.sh{display:grid;grid-template-columns:90px 1fr 54px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
-    .al{padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid var(--cr);background:#ef444422}#err{padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid var(--wa);background:#f59e0b22}
-    button,select,input[type=text],input[type=number],input[type=date]{font:inherit;border-radius:8px;border:1px solid var(--bd);background:#0b0b0d;color:var(--tx);padding:6px 10px}
-    button{cursor:pointer;background:linear-gradient(#f3d77a,#b8891a);color:#1a1200;font-weight:700;border:0}button.o{background:#0b0b0d;color:var(--g);border:1px solid var(--g)}button.on{outline:2px solid var(--g2)}
-    .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--ok);box-shadow:0 0 8px var(--ok)}
-    #toast{position:fixed;right:14px;top:14px;z-index:9;padding:10px 14px;border-radius:10px;background:#101013;border:1px solid var(--g);display:none;max-width:300px}
-    .tb{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}.sl{display:grid;grid-template-columns:80px 1fr 46px;gap:8px;align-items:center;font-size:13px;margin:4px 0}input[type=range]{accent-color:#d4af37;width:100%}
-    .ev{padding:5px 0;border-top:1px solid var(--bd);font-size:13px}.ev:first-child{border:0}
-    </style></head><body><div id="toast"></div><div class="w">
-    <div class="row" style="align-items:center"><div style="flex:3 1 300px"><h1>FACTORYMIND</h1><div class="mu"><span class="dot"></span>Live predictive maintenance · gold edition</div></div>
-    <div style="flex:2 1 300px;text-align:right"><label class="mu"><input type="checkbox" id="auto"> auto-refresh 15s</label> <button class="o" id="csvx">Export CSV</button></div></div><br>
-    <div id="err" hidden></div><div class="row" id="cnt"></div><br>
-    <div class="row two">
-     <div class="c"><h2>3D factory floor</h2><canvas id="floor" class="gl"></canvas><small>Machine body + risk tower with beacon (taller = riskier). Drag, scroll, click.</small></div>
-     <div><div class="c"><h2>Alert center</h2><div id="al"><small>No alerts yet</small></div></div>
-     <div class="c"><h2>Risk distribution</h2><canvas id="hist" width="400" height="110" style="width:100%"></canvas><div id="parts"></div></div></div>
-    </div>
-    <div class="c"><h2>Fleet table</h2><div class="tb"><input type="text" id="q" placeholder="Search machine or part"><select id="flt"><option value="">All</option><option>critical</option><option>warning</option><option>healthy</option></select><button class="o" id="schedc">Schedule all critical</button></div>
-    <div style="max-height:300px;overflow:auto"><table id="tbl"></table></div></div>
-    <div class="c" id="panel" hidden>
-     <h2 id="mt"></h2><div class="al" id="alr" hidden></div>
-     <div class="row two"><div><canvas id="twin" class="gl"></canvas>
-      <div class="tb"><button class="o" id="bx">X-ray</button><button class="o" id="be">Exploded</button><button class="o" id="bs">Auto-rotate</button></div>
-      <small>Gold = normal, red = stressed part (glows if risky). Rotor speed and shaking follow live sensors.</small></div>
-     <div><div class="row"><div class="k"><canvas id="gauge" width="170" height="95" style="width:100%"></canvas><small>7-day failure risk</small></div>
-      <div class="k"><div class="big" id="hs"></div><small>Health score</small><div class="big" id="ru" style="font-size:20px;margin-top:6px"></div><small>Days left (RUL)</small></div></div>
-      <div class="k" style="margin-top:12px"><small>Likely failing part</small><div class="big" id="pt" style="font-size:18px"></div></div>
-      <h2 style="margin-top:12px">Why this risk</h2><div id="fx"></div>
-      <div class="tb"><input type="date" id="md"><button id="addm">Schedule maintenance</button></div></div></div>
-     <h2 style="margin-top:12px">Sensors (last 24 hours)</h2><div class="row" id="sn"></div>
-     <div class="row two" style="margin-top:12px"><div><h2>Live simulation</h2><small>Vibration push: <b id="vb">0</b></small><input type="range" id="boost" min="0" max="6" step="0.5" value="0"><br><br><button id="live">Start live stream</button></div>
-     <div><h2>Prediction history</h2><div id="hist2"></div></div></div>
-    </div>
-    <div class="row two">
-     <div class="c"><h2>What-if simulator</h2><div class="sl"><span>Voltage</span><input type="range" id="w0" min="100" max="260" value="170"><b id="v0">170</b></div>
-      <div class="sl"><span>Rotation</span><input type="range" id="w1" min="200" max="700" value="446"><b id="v1">446</b></div>
-      <div class="sl"><span>Pressure</span><input type="range" id="w2" min="50" max="180" value="100"><b id="v2">100</b></div>
-      <div class="sl"><span>Vibration</span><input type="range" id="w3" min="20" max="100" value="40"><b id="v3">40</b></div><div id="wi" class="mu">Move a slider to predict.</div>
-      <div style="margin-top:8px"><input type="file" id="csv" accept=".csv"> <small>CSV: volt,rotate,pressure,vibration</small></div><div id="pr" class="mu"></div></div>
-     <div class="c"><h2>Savings estimator</h2><div class="row"><label class="mu">Cost / hour<br><input type="number" id="cph" value="5000" style="width:100%"></label><label class="mu">Hours per failure<br><input type="number" id="hpf" value="8" style="width:100%"></label></div><br><div class="row" id="sv"></div><small>Estimate: sum of calibrated risks x model recall x downtime cost.</small></div>
-    </div>
-    <div class="c"><h2>Maintenance planner</h2><div id="plan"><small>No tasks yet</small></div></div>
-    <div class="row two"><div class="c"><h2>Model comparison</h2><div id="mdl"></div></div><div class="c"><h2>Drift (PSI, above 0.25 means retrain)</h2><div id="dr"></div></div></div>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-    var $=function(s){return document.querySelector(s)};
-    function api(p,o){return fetch('/api'+p,o).then(function(r){if(!r.ok)return r.json().catch(function(){return{}}).then(function(j){throw new Error(j.detail||('HTTP '+r.status+' on /api'+p))});return r.json()})}
-    function post(p,b){return api(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})}
-    function err(e){var d=$('#err');d.hidden=false;d.textContent='Problem: '+(e&&e.message?e.message:e)+'. Check the server terminal for details.'}
-    var CSS={critical:'#ef4444',warning:'#f59e0b',healthy:'#22c55e'},HEX={critical:0xef4444,warning:0xf59e0b,healthy:0x22c55e},RK={healthy:0,warning:1,critical:2};
-    var SN=[['volt','Voltage','V','comp1'],['rotate','Rotation','RPM','comp2'],['pressure','Pressure','psi','comp3'],['vibration','Vibration','mm/s','comp4']];
-    function pct(x){return Math.round(x*100)+'%'}
-    var FL=[],LR=null,cur=null,timer=null,tick=0,REC=0.5,prev=null,AL=[],HAS3D=typeof THREE!=='undefined',F=null,T=null,TL=null,auto=null;
-    
-    /* ---- 3D helpers ---- */
-    function orbit(c,cam,tg,st){var d=false,lx=0,ly=0,mv=0;
-     function place(){cam.position.set(tg.x+st.r*Math.sin(st.ph)*Math.sin(st.th),tg.y+st.r*Math.cos(st.ph),tg.z+st.r*Math.sin(st.ph)*Math.cos(st.th));cam.lookAt(tg)}
-     c.addEventListener('pointerdown',function(e){d=true;lx=e.clientX;ly=e.clientY;mv=0});window.addEventListener('pointerup',function(){d=false});
-     window.addEventListener('pointermove',function(e){if(!d)return;var dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;mv+=Math.abs(dx)+Math.abs(dy);st.th-=dx*0.008;st.ph=Math.min(1.5,Math.max(0.2,st.ph-dy*0.008));place()});
-     c.addEventListener('wheel',function(e){e.preventDefault();st.r=Math.min(st.max,Math.max(st.min,st.r+e.deltaY*0.01));place()},{passive:false});
-     place();return{moved:function(){return mv},place:place,st:st}}
-    function scene(id,st,tg){var c=$(id),o={c:c};o.r=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});o.r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
-     o.s=new THREE.Scene();o.cam=new THREE.PerspectiveCamera(45,1,0.1,200);o.o=orbit(c,o.cam,tg,st);
-     o.s.add(new THREE.AmbientLight(0xffffff,0.55));var l=new THREE.DirectionalLight(0xfff1c8,0.9);l.position.set(6,12,8);o.s.add(l);var l2=new THREE.PointLight(0xd4af37,0.6,40);l2.position.set(-6,6,-6);o.s.add(l2);return o}
-    function fit(o){var w=o.c.clientWidth,h=o.c.clientHeight;if(o.w!==w||o.h!==h){o.w=w;o.h=h;o.r.setSize(w,h,false);o.cam.aspect=w/h;o.cam.updateProjectionMatrix()}}
-    function mat(col,m,r){return new THREE.MeshStandardMaterial({color:col,metalness:m==null?0.5:m,roughness:r==null?0.45:r})}
-    
-    /* ---- factory floor: industrial machine with risk tower ---- */
-    function mk3(id,i){var g=new THREE.Group(),dk=mat(0x1d1d22),md=mat(0x2c2c33),M=THREE.Mesh;
-     var b=new M(new THREE.BoxGeometry(1.5,0.4,1.5),dk),c=new M(new THREE.CylinderGeometry(0.45,0.5,0.9,20),md),r=new M(new THREE.TorusGeometry(0.47,0.06,8,24),mat(0xd4af37,0.9,0.3)),
-     p=new M(new THREE.CylinderGeometry(0.09,0.09,1,10),mat(0x22c55e)),bc=new M(new THREE.SphereGeometry(0.2,14,14),mat(0x22c55e)),
-     v=new M(new THREE.BoxGeometry(0.5,0.18,0.5),mat(0xd4af37,0.9,0.3));
-     b.position.y=0.2;c.position.y=0.85;r.position.y=1.25;r.rotation.x=Math.PI/2;v.position.set(-0.45,0.5,-0.45);p.position.set(0.55,0.5,0.55);
-     [b,c,r,p,bc,v].forEach(function(m){m.userData={id:id};g.add(m);F.pick.push(m)});
-     g.position.set(((i%8)-3.5)*2.5,0,(Math.floor(i/8)-2)*2.5);F.s.add(g);g.p=p;g.bc=bc;g.b=b;g.r=r;return g}
-    function initFloor(){F=scene('#floor',{th:0.6,ph:1.0,r:24,min:8,max:44},new THREE.Vector3(0,0.5,0));F.s.add(new THREE.GridHelper(28,28,0xd4af37,0x2a2208));F.m={};F.pick=[];
-     var ray=new THREE.Raycaster(),pt=new THREE.Vector2();
-     F.c.addEventListener('click',function(e){if(F.o.moved()>6)return;var b=F.c.getBoundingClientRect();pt.set((e.clientX-b.left)/b.width*2-1,-((e.clientY-b.top)/b.height)*2+1);ray.setFromCamera(pt,F.cam);var h=ray.intersectObjects(F.pick);if(h.length)show(h[0].object.userData.id)})}
-    function updateFloor(f){if(!F)return;var ids=f.map(function(m){return m.machine_id}).sort(function(a,b){return a-b});
-     f.forEach(function(m){var k=m.machine_id,o=F.m[k]||(F.m[k]=mk3(k,ids.indexOf(k))),h=0.3+m.risk*3.2;
-      o.p.scale.y=h;o.p.position.y=0.4+h/2;o.bc.position.set(0.55,0.4+h+0.18,0.55);
-      [o.p,o.bc].forEach(function(x){x.material.color.setHex(HEX[m.status]);x.material.emissive.setHex(HEX[m.status]);x.material.emissiveIntensity=0.55});
-      o.st=m.status;o.b.material.emissive.setHex(String(k)===String(cur)?0x6b5513:0)})}
-    
-    /* ---- digital twin ---- */
-    var OFF={comp1:[-1.5,0,0],comp2:[0,1.6,0],comp3:[1.5,0,0],comp4:[0.8,0,1.8]};
-    function initTwin(){T=scene('#twin',{th:0.7,ph:1.15,r:10,min:5,max:18},new THREE.Vector3(0,1,0));T.g=new THREE.Group();T.s.add(T.g);T.mat={};T.x=T.e=T.sp=false;
-     ['comp1','comp2','comp3','comp4'].forEach(function(k){T.mat[k]=mat(0xb8962e,0.85,0.3)});
-     var dk=mat(0x25252b),M=THREE.Mesh,b=new M(new THREE.BoxGeometry(7.6,0.3,3.8),dk);b.position.y=-0.15;T.g.add(b);
-     var tr=new M(new THREE.BoxGeometry(7.8,0.06,4),mat(0xd4af37,0.9,0.3));tr.position.y=-0.32;T.g.add(tr);
-     var sh=new M(new THREE.CylinderGeometry(0.2,0.2,4.6,16),mat(0x6b6b75));sh.rotation.z=Math.PI/2;sh.position.set(0,1.1,0);T.g.add(sh);
-     var e=new M(new THREE.BoxGeometry(1.7,1.9,1.7),T.mat.comp1);e.position.set(-2.8,0.95,0);T.g.add(e);
-     for(var j=0;j<3;j++){var ln=new M(new THREE.BoxGeometry(0.05,1.5,0.05),dk);ln.position.set(-3.7,0.9,-0.6+j*0.6);T.g.add(ln)}
-     var r=new M(new THREE.CylinderGeometry(0.9,0.9,1.3,24),T.mat.comp2);r.rotation.z=Math.PI/2;r.position.set(-0.6,1.1,0);
-     for(var i=0;i<3;i++){var fn=new M(new THREE.BoxGeometry(2.2,1.2,0.1),T.mat.comp2);fn.rotation.y=i*Math.PI/3;r.add(fn)}T.g.add(r);
-     var p=new M(new THREE.TorusGeometry(0.85,0.22,12,32),T.mat.comp3);p.position.set(2.6,1.2,0);p.rotation.y=Math.PI/2;T.g.add(p);
-     var p2=new M(new THREE.CylinderGeometry(0.22,0.22,1.1,12),T.mat.comp3);p2.position.set(2.6,0.4,0);p.add(p2);p2.position.set(0,-0.8,0);p2.rotation.z=0;
-     var br=new M(new THREE.TorusGeometry(0.5,0.18,12,24),T.mat.comp4);br.position.set(1.0,1.1,0);br.rotation.y=Math.PI/2;T.g.add(br);
-     T.parts={comp1:e,comp2:r,comp3:p,comp4:br};T.bp={};for(var k in T.parts)T.bp[k]=T.parts[k].position.clone();
-     T.wire=function(on){T.g.traverse(function(o){if(o.material)o.material.wireframe=on})}}
-    function updateTwin(r,last){if(!T)return;TL={rot:last.rotate,vib:last.vibration,part:r.part,status:r.status,risk:r.risk};
-     var mx=Math.max.apply(null,SN.map(function(s){return Math.abs(r.factors[s[0]])}).concat([0.01])),a=new THREE.Color(0xb8962e),b=new THREE.Color(0xef4444);
-     SN.forEach(function(s){var v=r.factors[s[0]],t=v>0?Math.min(v/mx,1):0,m=T.mat[s[3]];m.color.copy(a).lerp(b,t);m.emissive.setHex(0)})}
-    function loop(t){requestAnimationFrame(loop);
-     if(F){fit(F);for(var k in F.m){var o=F.m[k];if(o.st=='critical'){o.bc.scale.setScalar(1+0.4*Math.sin(t/160));o.bc.material.emissiveIntensity=0.5+0.5*Math.sin(t/160)}else o.bc.scale.setScalar(1)}F.r.render(F.s,F.cam)}
-     if(T&&!$('#panel').hidden){fit(T);
-      if(T.sp){T.o.st.th+=0.006;T.o.place()}
-      for(var q in T.parts){var P=T.parts[q],B=T.bp[q],f=OFF[q];P.position.x+=(B.x+(T.e?f[0]:0)-P.position.x)*0.12;P.position.y+=(B.y+(T.e?f[1]:0)-P.position.y)*0.12;P.position.z+=(B.z+(T.e?f[2]:0)-P.position.z)*0.12}
-      if(TL){T.parts.comp2.rotation.x+=0.03+TL.rot/446*0.09;var am=Math.max(0,(TL.vib-40)/25)*0.05;T.g.position.x=(Math.random()-0.5)*am;T.g.position.y=(Math.random()-0.5)*am;
-       if(TL.risk>=0.3){var m=T.mat[TL.part];if(m){m.emissive.setHex(HEX[TL.status]);m.emissiveIntensity=0.3+0.5*Math.sin(t/180)}}}
-      T.r.render(T.s,T.cam)}}
-    
-    /* ---- 2D charts ---- */
-    function spark(c,arr,col){var x=c.getContext('2d'),w=c.width,h=c.height,mn=Math.min.apply(null,arr),mx=Math.max.apply(null,arr),sp=(mx-mn)||1;x.clearRect(0,0,w,h);x.strokeStyle=col;x.lineWidth=2;x.beginPath();
-     arr.forEach(function(v,i){var X=i/(arr.length-1)*(w-4)+2,Y=h-4-(v-mn)/sp*(h-8);if(i)x.lineTo(X,Y);else x.moveTo(X,Y)});x.stroke()}
-    function gauge(c,risk,col){var x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);x.lineWidth=16;x.lineCap='round';x.strokeStyle='#201a09';x.beginPath();x.arc(w/2,h-12,66,Math.PI,2*Math.PI);x.stroke();
-     x.strokeStyle=col;x.beginPath();x.arc(w/2,h-12,66,Math.PI,Math.PI+Math.PI*Math.max(0.02,risk));x.stroke();x.fillStyle='#f3d77a';x.font='bold 24px sans-serif';x.textAlign='center';x.fillText(pct(risk),w/2,h-18)}
-    function dist(){var c=$('#hist'),x=c.getContext('2d'),w=c.width,h=c.height,b=[0,0,0,0,0,0,0,0,0,0];FL.forEach(function(m){b[Math.min(9,Math.floor(m.risk*10))]++});
-     var mx=Math.max.apply(null,b.concat([1]));x.clearRect(0,0,w,h);b.forEach(function(v,i){var bh=v/mx*(h-26);x.fillStyle=i>=6?'#ef4444':i>=3?'#f59e0b':'#d4af37';x.fillRect(i*40+6,h-16-bh,28,bh);x.fillStyle='#a79a73';x.font='10px sans-serif';x.fillText(i*10+'%',i*40+8,h-3)});
-     var pc={};FL.filter(function(m){return m.risk>=0.3}).forEach(function(m){pc[m.part_name]=(pc[m.part_name]||0)+1});
-     $('#parts').innerHTML='<small>Parts at risk: '+(Object.keys(pc).map(function(k){return k+' ('+pc[k]+')'}).join(' · ')||'none')+'</small>'}
-    
-    /* ---- fleet, alerts, table, savings ---- */
-    function toast(t,s){var d=$('#toast');d.textContent=t;d.style.borderColor=CSS[s]||'#d4af37';d.style.display='block';clearTimeout(d.t);d.t=setTimeout(function(){d.style.display='none'},3500)}
-    function push(t,s,q){AL.unshift({t:t,s:s,at:new Date().toLocaleTimeString()});AL=AL.slice(0,8);$('#al').innerHTML=AL.map(function(a){return'<div class="ev"><b style="color:'+CSS[a.s]+'">'+a.at+'</b> '+a.t+'</div>'}).join('');if(!q)toast(t,s)}
-    function alerts(f){var first=!prev;if(first)prev={};f.forEach(function(m){var o=prev[m.machine_id];if(first?m.status=='critical':(o&&RK[m.status]>RK[o]))push(m.name+' is '+m.status+' · '+m.part_name,m.status,first);prev[m.machine_id]=m.status})}
-    function table(){var q=$('#q').value.toLowerCase(),s=$('#flt').value;
-     $('#tbl').innerHTML='<tr><th>Machine</th><th>Part</th><th>Risk</th><th>RUL</th><th>Status</th></tr>'+FL.filter(function(m){return(!s||m.status==s)&&(!q||(m.name+' '+m.part_name).toLowerCase().indexOf(q)>-1)}).map(function(m){
-      return'<tr class="r" data-id="'+m.machine_id+'"><td>'+m.name+'</td><td>'+m.part_name+'</td><td style="width:30%"><div class="bar"><i style="width:'+m.risk*100+'%;background:'+CSS[m.status]+'"></i></div></td><td>'+(m.rul_days==null?'30+':m.rul_days)+'</td><td style="color:'+CSS[m.status]+'">'+m.status+'</td></tr>'}).join('');
-     Array.prototype.forEach.call(document.querySelectorAll('tr.r'),function(e){e.onclick=function(){show(e.dataset.id)}})}
-    function sav(){var ex=FL.reduce(function(a,m){return a+m.risk},0),cost=ex*REC*(+$('#hpf').value||0)*(+$('#cph').value||0);
-     $('#sv').innerHTML='<div class="k"><div class="big">'+ex.toFixed(1)+'</div><small>expected failures / 7 days</small></div><div class="k"><div class="big">'+Math.round(cost).toLocaleString()+'</div><small>downtime cost avoidable</small></div>'}
-    function kpis(f){var avg=Math.round(f.reduce(function(a,m){return a+m.health},0)/Math.max(f.length,1));
-     $('#cnt').innerHTML=['healthy','warning','critical'].map(function(s){return'<div class="k"><div class="big" style="color:'+CSS[s]+'">'+f.filter(function(m){return m.status==s}).length+'</div><small>'+s+'</small></div>'}).join('')+'<div class="k"><div class="big">'+avg+'</div><small>avg health</small></div><div class="k"><div class="big">'+f.filter(function(m){return m.anomaly}).length+'</div><small>anomalies</small></div>'}
-    function fleet(){return api('/fleet').then(function(f){FL=f;alerts(f);kpis(f);table();dist();sav();updateFloor(f)})}
-    
-    /* ---- machine panel ---- */
-    function draw(r){LR=r;$('#panel').hidden=false;$('#mt').textContent=r.name;
-     var a=$('#alr');a.hidden=!(r.status=='critical'||r.anomaly);a.textContent=r.status=='critical'?('Critical. Inspect: '+r.part_name+' within '+(r.rul_days==null?'a few':r.rul_days)+' days.'):'Unusual sensor behaviour detected.';
-     gauge($('#gauge'),r.risk,CSS[r.status]);$('#hs').textContent=r.health;$('#ru').textContent=r.rul_days==null?'30+':r.rul_days;$('#pt').textContent=r.part_name;
-     var last=r.readings[r.readings.length-1];
-     $('#sn').innerHTML=SN.map(function(s){return'<div class="k"><div class="big" style="font-size:20px">'+Math.round(last[s[0]])+'</div><small>'+s[1]+' ('+s[2]+')</small><canvas width="140" height="40" style="width:100%" id="sp_'+s[0]+'"></canvas></div>'}).join('');
-     SN.forEach(function(s){spark($('#sp_'+s[0]),r.readings.map(function(x){return x[s[0]]}),'#f3d77a')});
-     var mx=Math.max.apply(null,SN.map(function(s){return Math.abs(r.factors[s[0]])}).concat([0.01]));
-     $('#fx').innerHTML=SN.map(function(s){var v=r.factors[s[0]];return'<div class="sh"><span>'+s[1]+'</span><div class="bar"><i style="width:'+Math.abs(v)/mx*100+'%;background:'+(v>0?'#ef4444':'#22c55e')+'"></i></div><span>'+(v>0?'+':'')+v.toFixed(2)+'</span></div>'}).join('');
-     updateTwin(r,last)}
-    function hist2(id){api('/machines/'+id+'/history').then(function(h){$('#hist2').innerHTML='<table><tr><th>Time</th><th>Risk</th><th>RUL</th></tr>'+h.slice(0,6).map(function(x){return'<tr><td>'+String(x.ts).slice(5,16)+'</td><td>'+pct(x.risk)+'</td><td>'+(x.rul==null?'30+':Math.round(x.rul*10)/10)+'</td></tr>'}).join('')+'</table>'}).catch(function(){})}
-    function show(id){cur=id;stop();return api('/machines/'+id).then(function(r){draw(r);hist2(id);$('#md').value=iso(r.rul_days==null?14:Math.max(1,Math.floor(r.rul_days)));fleet();var p=$('#panel').getBoundingClientRect();window.scrollTo(0,window.pageYOffset+p.top-10)}).catch(err)}
-    function stop(){clearInterval(timer);timer=null;$('#live').textContent='Start live stream'}
-    $('#boost').oninput=function(e){$('#vb').textContent=e.target.value};
-    $('#live').onclick=function(){if(!cur)return;if(timer)return stop();$('#live').textContent='Stop live stream';
-     timer=setInterval(function(){post('/machines/'+cur+'/simulate?vibration_boost='+$('#boost').value).then(function(r){draw(r);if(++tick%6==0){fleet();hist2(cur)}}).catch(function(e){stop();err(e)})},1500)};
-    [['#bx','x'],['#be','e'],['#bs','sp']].forEach(function(b){$(b[0]).onclick=function(){if(!T)return;T[b[1]]=!T[b[1]];this.classList.toggle('on',T[b[1]]);if(b[1]=='x')T.wire(T.x)}});
-    
-    /* ---- planner (saved in this browser) ---- */
-    function iso(d){var x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10)}
-    function tasks(){try{return JSON.parse(localStorage.getItem('fm_tasks')||'[]')}catch(e){return[]}}
-    function saveT(t){try{localStorage.setItem('fm_tasks',JSON.stringify(t))}catch(e){}renderT()}
-    function addT(m,d){var t=tasks();if(t.some(function(x){return x.m==m.name&&!x.done}))return false;t.push({id:Date.now()+Math.random(),m:m.name,p:m.part_name,d:d,done:false});saveT(t);return true}
-    function renderT(){var t=tasks().sort(function(a,b){return a.d<b.d?-1:1});$('#plan').innerHTML=t.length?'<table><tr><th></th><th>Date</th><th>Machine</th><th>Part</th><th></th></tr>'+t.map(function(x){return'<tr><td><input type="checkbox" data-d="'+x.id+'"'+(x.done?' checked':'')+'></td><td>'+x.d+'</td><td style="'+(x.done?'text-decoration:line-through;opacity:.5':'')+'">'+x.m+'</td><td>'+x.p+'</td><td><button class="o" data-x="'+x.id+'">x</button></td></tr>'}).join('')+'</table>':'<small>No tasks yet. Open a machine and schedule maintenance.</small>'}
-    $('#plan').onclick=function(e){var d=e.target.dataset;if(d.d){saveT(tasks().map(function(x){if(String(x.id)==d.d)x.done=!x.done;return x}))}if(d.x)saveT(tasks().filter(function(x){return String(x.id)!=d.x}))};
-    $('#addm').onclick=function(){if(LR&&$('#md').value){addT(LR,$('#md').value);toast('Maintenance scheduled for '+LR.name,'healthy')}};
-    $('#schedc').onclick=function(){var n=0;FL.filter(function(m){return m.status=='critical'}).forEach(function(m){if(addT(m,iso(Math.max(1,Math.floor(m.rul_days||3)))))n++});toast(n+' maintenance task(s) added','warning')};
-    
-    /* ---- what-if, CSV, models ---- */
-    var wt=null;function wif(){for(var i=0;i<4;i++)$('#v'+i).textContent=$('#w'+i).value;clearTimeout(wt);wt=setTimeout(function(){var o={volt:+$('#w0').value,rotate:+$('#w1').value,pressure:+$('#w2').value,vibration:+$('#w3').value},a=[];for(var i=0;i<24;i++)a.push(o);
-     post('/predict',{readings:a}).then(function(r){$('#wi').innerHTML='<b style="color:'+CSS[r.status]+'">'+r.status+'</b> · risk '+pct(r.risk)+' · '+r.part_name+' · RUL '+(r.rul_days==null?'30+':r.rul_days)+' days'}).catch(function(e){$('#wi').textContent='Error: '+e.message})},250)}
-    for(var i=0;i<4;i++)$('#w'+i).oninput=wif;
-    $('#csv').onchange=function(e){var rd=new FileReader();rd.onload=function(){var t=rd.result.trim().split(/\r?\n/),h=t[0].split(',').map(function(x){return x.trim()});
-     var rows=t.slice(1).slice(-48).map(function(l){var v=l.split(','),o={};['volt','rotate','pressure','vibration'].forEach(function(k){o[k]=+v[h.indexOf(k)]});return o});
-     post('/predict',{readings:rows}).then(function(r){$('#pr').innerHTML='CSV: <b style="color:'+CSS[r.status]+'">'+r.status+'</b> · risk '+pct(r.risk)+' · '+r.part_name}).catch(function(er){$('#pr').textContent='Error: '+er.message})};rd.readAsText(e.target.files[0])};
-    $('#csvx').onclick=function(){var s='machine,part,risk,health,rul_days,status\n'+FL.map(function(m){return[m.name,m.part_name,m.risk,m.health,m.rul_days==null?'':m.rul_days,m.status].join(',')}).join('\n'),a=document.createElement('a');
-     a.href=URL.createObjectURL(new Blob([s],{type:'text/csv'}));a.download='factorymind_fleet.csv';document.body.appendChild(a);a.click();a.remove()};
-    $('#q').oninput=table;$('#flt').onchange=table;$('#cph').oninput=sav;$('#hpf').oninput=sav;
-    $('#auto').onchange=function(){clearInterval(auto);auto=this.checked?setInterval(function(){fleet().catch(err)},15000):null};
-    function info(){api('/models').then(function(m){REC=m.models[m.best].recall;sav();
-     $('#mdl').innerHTML='<table><tr><th>Model</th><th>Recall</th><th>Precision</th><th>PR-AUC</th><th>Missed</th><th>False alarms</th></tr>'+Object.keys(m.models).map(function(n){var x=m.models[n];return'<tr><td>'+(n===m.best?'<b>'+n+' (best)</b>':n)+'</td><td>'+x.recall.toFixed(2)+'</td><td>'+x.precision.toFixed(2)+'</td><td>'+x.pr_auc.toFixed(2)+'</td><td>'+x.false_negatives+'</td><td>'+x.false_positives+'</td></tr>'}).join('')+'</table>'}).catch(err);
-     api('/drift').then(function(d){$('#dr').innerHTML=Object.keys(d).map(function(k){var v=d[k];return'<div class="sh"><span>'+k+'</span><div class="bar"><i style="width:'+Math.min(v/0.4,1)*100+'%;background:'+(v>0.25?'#ef4444':'#d4af37')+'"></i></div><span>'+v+'</span></div>'}).join('')}).catch(err)}
-    
-    if(HAS3D){try{initFloor();initTwin();requestAnimationFrame(loop)}catch(e){HAS3D=false;err('3D could not start ('+e.message+'). The rest still works')}}else err('3D library did not load (internet needed for three.js). The rest still works');
-    renderT();wif();fleet().catch(err);info();
-    </script></body></html>
+<style>
+:root{--bg:#060608;--card:#101013;--bd:#33290f;--g:#d4af37;--g2:#f3d77a;--tx:#f1ead6;--mu:#a79a73;--ok:#22c55e;--wa:#f59e0b;--cr:#ef4444}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(#15110a,#060608 70%) fixed;color:var(--tx);font:14px/1.5 system-ui,Segoe UI,sans-serif}
+.w{max-width:1150px;margin:0 auto;padding:14px}h1{margin:0;font-size:26px;letter-spacing:1px;background:linear-gradient(90deg,#f3d77a,#b8891a);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-size:14px;margin:0 0 8px;color:var(--g);text-transform:uppercase;letter-spacing:1px}.mu,small{color:var(--mu);font-size:12px}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 0 18px #d4af3710}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 130px}.two>*{flex:1 1 440px}.big{font-size:26px;font-weight:700;color:var(--g2)}
+.k{background:#0b0b0d;border:1px solid var(--bd);border-radius:10px;padding:10px}
+canvas.gl{width:100%;height:350px;display:block;border-radius:10px;background:radial-gradient(#241b06,#050505);touch-action:none;cursor:grab;border:1px solid var(--bd)}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;border-bottom:1px solid var(--bd);text-align:left}th{color:var(--g)}tr.r{cursor:pointer}tr.r:hover{background:#d4af3715}
+.bar{height:10px;background:#201a09;border-radius:5px;overflow:hidden}.bar i{display:block;height:100%}.sh{display:grid;grid-template-columns:90px 1fr 54px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
+.al{padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid var(--cr);background:#ef444422}#err{padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid var(--wa);background:#f59e0b22}
+button,select,input[type=text],input[type=number],input[type=date]{font:inherit;border-radius:8px;border:1px solid var(--bd);background:#0b0b0d;color:var(--tx);padding:6px 10px}
+button{cursor:pointer;background:linear-gradient(#f3d77a,#b8891a);color:#1a1200;font-weight:700;border:0}button.o{background:#0b0b0d;color:var(--g);border:1px solid var(--g)}button.on{outline:2px solid var(--g2)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+#toast{position:fixed;right:14px;top:14px;z-index:9;padding:10px 14px;border-radius:10px;background:#101013;border:1px solid var(--g);display:none;max-width:300px}
+.tb{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}.sl{display:grid;grid-template-columns:80px 1fr 46px;gap:8px;align-items:center;font-size:13px;margin:4px 0}input[type=range]{accent-color:#d4af37;width:100%}
+.ev{padding:5px 0;border-top:1px solid var(--bd);font-size:13px}.ev:first-child{border:0}
+</style></head><body><div id="toast"></div><div class="w">
+<div class="row" style="align-items:center"><div style="flex:3 1 300px"><h1>FACTORYMIND</h1><div class="mu"><span class="dot"></span>Live predictive maintenance · gold edition</div></div>
+<div style="flex:2 1 300px;text-align:right"><label class="mu"><input type="checkbox" id="auto"> auto-refresh 15s</label> <button class="o" id="csvx">Export CSV</button></div></div><br>
+<div id="err" hidden></div><div class="row" id="cnt"></div><br>
+<div class="row two">
+ <div class="c"><h2>3D factory floor</h2><canvas id="floor" class="gl"></canvas><small>Machine body + risk tower with beacon (taller = riskier). Drag, scroll, click.</small></div>
+ <div><div class="c"><h2>Alert center</h2><div id="al"><small>No alerts yet</small></div></div>
+ <div class="c"><h2>Risk distribution</h2><canvas id="hist" width="400" height="110" style="width:100%"></canvas><div id="parts"></div></div></div>
+</div>
+<div class="c"><h2>Fleet table</h2><div class="tb"><input type="text" id="q" placeholder="Search machine or part"><select id="flt"><option value="">All</option><option>critical</option><option>warning</option><option>healthy</option></select><button class="o" id="schedc">Schedule all critical</button></div>
+<div style="max-height:300px;overflow:auto"><table id="tbl"></table></div></div>
+<div class="c" id="panel" hidden>
+ <h2 id="mt"></h2><div class="al" id="alr" hidden></div>
+ <div class="row two"><div><canvas id="twin" class="gl"></canvas>
+  <div class="tb"><button class="o" id="bx">X-ray</button><button class="o" id="be">Exploded</button><button class="o" id="bs">Auto-rotate</button></div>
+  <small>Gold = normal, red = stressed part (glows if risky). Rotor speed and shaking follow live sensors.</small></div>
+ <div><div class="row"><div class="k"><canvas id="gauge" width="170" height="95" style="width:100%"></canvas><small>7-day failure risk</small></div>
+  <div class="k"><div class="big" id="hs"></div><small>Health score</small><div class="big" id="ru" style="font-size:20px;margin-top:6px"></div><small>Days left (RUL)</small></div></div>
+  <div class="k" style="margin-top:12px"><small>Likely failing part</small><div class="big" id="pt" style="font-size:18px"></div></div>
+  <h2 style="margin-top:12px">Why this risk</h2><div id="fx"></div>
+  <div class="tb"><input type="date" id="md"><button id="addm">Schedule maintenance</button></div></div></div>
+ <h2 style="margin-top:12px">Sensors (last 24 hours)</h2><div class="row" id="sn"></div>
+ <div class="row two" style="margin-top:12px"><div><h2>Live simulation</h2><small>Vibration push: <b id="vb">0</b></small><input type="range" id="boost" min="0" max="6" step="0.5" value="0"><br><br><button id="live">Start live stream</button></div>
+ <div><h2>Prediction history</h2><div id="hist2"></div></div></div>
+</div>
+<div class="row two">
+ <div class="c"><h2>What-if simulator</h2><div class="sl"><span>Voltage</span><input type="range" id="w0" min="100" max="260" value="170"><b id="v0">170</b></div>
+  <div class="sl"><span>Rotation</span><input type="range" id="w1" min="200" max="700" value="446"><b id="v1">446</b></div>
+  <div class="sl"><span>Pressure</span><input type="range" id="w2" min="50" max="180" value="100"><b id="v2">100</b></div>
+  <div class="sl"><span>Vibration</span><input type="range" id="w3" min="20" max="100" value="40"><b id="v3">40</b></div><div id="wi" class="mu">Move a slider to predict.</div>
+  <div style="margin-top:8px"><input type="file" id="csv" accept=".csv"> <small>CSV: volt,rotate,pressure,vibration</small></div><div id="pr" class="mu"></div></div>
+ <div class="c"><h2>Savings estimator</h2><div class="row"><label class="mu">Cost / hour<br><input type="number" id="cph" value="5000" style="width:100%"></label><label class="mu">Hours per failure<br><input type="number" id="hpf" value="8" style="width:100%"></label></div><br><div class="row" id="sv"></div><small>Estimate: sum of calibrated risks x model recall x downtime cost.</small></div>
+</div>
+<div class="c"><h2>Maintenance planner</h2><div id="plan"><small>No tasks yet</small></div></div>
+<div class="row two"><div class="c"><h2>Model comparison</h2><div id="mdl"></div></div><div class="c"><h2>Drift (PSI, above 0.25 means retrain)</h2><div id="dr"></div></div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+var $=function(s){return document.querySelector(s)};
+function api(p,o){return fetch('/api'+p,o).then(function(r){if(!r.ok)return r.json().catch(function(){return{}}).then(function(j){throw new Error(j.detail||('HTTP '+r.status+' on /api'+p))});return r.json()})}
+function post(p,b){return api(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})}
+function err(e){var d=$('#err');d.hidden=false;d.textContent='Problem: '+(e&&e.message?e.message:e)+'. Check the server terminal for details.'}
+var CSS={critical:'#ef4444',warning:'#f59e0b',healthy:'#22c55e'},HEX={critical:0xef4444,warning:0xf59e0b,healthy:0x22c55e},RK={healthy:0,warning:1,critical:2};
+var SN=[['volt','Voltage','V','comp1'],['rotate','Rotation','RPM','comp2'],['pressure','Pressure','psi','comp3'],['vibration','Vibration','mm/s','comp4']];
+function pct(x){return Math.round(x*100)+'%'}
+var FL=[],LR=null,cur=null,timer=null,tick=0,REC=0.5,prev=null,AL=[],HAS3D=typeof THREE!=='undefined',F=null,T=null,TL=null,auto=null;
+
+/* ---- 3D helpers ---- */
+function orbit(c,cam,tg,st){var d=false,lx=0,ly=0,mv=0;
+ function place(){cam.position.set(tg.x+st.r*Math.sin(st.ph)*Math.sin(st.th),tg.y+st.r*Math.cos(st.ph),tg.z+st.r*Math.sin(st.ph)*Math.cos(st.th));cam.lookAt(tg)}
+ c.addEventListener('pointerdown',function(e){d=true;lx=e.clientX;ly=e.clientY;mv=0});window.addEventListener('pointerup',function(){d=false});
+ window.addEventListener('pointermove',function(e){if(!d)return;var dx=e.clientX-lx,dy=e.clientY-ly;lx=e.clientX;ly=e.clientY;mv+=Math.abs(dx)+Math.abs(dy);st.th-=dx*0.008;st.ph=Math.min(1.5,Math.max(0.2,st.ph-dy*0.008));place()});
+ c.addEventListener('wheel',function(e){e.preventDefault();st.r=Math.min(st.max,Math.max(st.min,st.r+e.deltaY*0.01));place()},{passive:false});
+ place();return{moved:function(){return mv},place:place,st:st}}
+function scene(id,st,tg){var c=$(id),o={c:c};o.r=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});o.r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+ o.s=new THREE.Scene();o.cam=new THREE.PerspectiveCamera(45,1,0.1,200);o.o=orbit(c,o.cam,tg,st);
+ o.s.add(new THREE.AmbientLight(0xffffff,0.55));var l=new THREE.DirectionalLight(0xfff1c8,0.9);l.position.set(6,12,8);o.s.add(l);var l2=new THREE.PointLight(0xd4af37,0.6,40);l2.position.set(-6,6,-6);o.s.add(l2);return o}
+function fit(o){var w=o.c.clientWidth,h=o.c.clientHeight;if(o.w!==w||o.h!==h){o.w=w;o.h=h;o.r.setSize(w,h,false);o.cam.aspect=w/h;o.cam.updateProjectionMatrix()}}
+function mat(col,m,r){return new THREE.MeshStandardMaterial({color:col,metalness:m==null?0.5:m,roughness:r==null?0.45:r})}
+
+/* ---- factory floor: industrial machine with risk tower ---- */
+function mk3(id,i){var g=new THREE.Group(),dk=mat(0x1d1d22),md=mat(0x2c2c33),M=THREE.Mesh;
+ var b=new M(new THREE.BoxGeometry(1.5,0.4,1.5),dk),c=new M(new THREE.CylinderGeometry(0.45,0.5,0.9,20),md),r=new M(new THREE.TorusGeometry(0.47,0.06,8,24),mat(0xd4af37,0.9,0.3)),
+ p=new M(new THREE.CylinderGeometry(0.09,0.09,1,10),mat(0x22c55e)),bc=new M(new THREE.SphereGeometry(0.2,14,14),mat(0x22c55e)),
+ v=new M(new THREE.BoxGeometry(0.5,0.18,0.5),mat(0xd4af37,0.9,0.3));
+ b.position.y=0.2;c.position.y=0.85;r.position.y=1.25;r.rotation.x=Math.PI/2;v.position.set(-0.45,0.5,-0.45);p.position.set(0.55,0.5,0.55);
+ [b,c,r,p,bc,v].forEach(function(m){m.userData={id:id};g.add(m);F.pick.push(m)});
+ g.position.set(((i%8)-3.5)*2.5,0,(Math.floor(i/8)-2)*2.5);F.s.add(g);g.p=p;g.bc=bc;g.b=b;g.r=r;return g}
+function initFloor(){F=scene('#floor',{th:0.6,ph:1.0,r:24,min:8,max:44},new THREE.Vector3(0,0.5,0));F.s.add(new THREE.GridHelper(28,28,0xd4af37,0x2a2208));F.m={};F.pick=[];
+ var ray=new THREE.Raycaster(),pt=new THREE.Vector2();
+ F.c.addEventListener('click',function(e){if(F.o.moved()>6)return;var b=F.c.getBoundingClientRect();pt.set((e.clientX-b.left)/b.width*2-1,-((e.clientY-b.top)/b.height)*2+1);ray.setFromCamera(pt,F.cam);var h=ray.intersectObjects(F.pick);if(h.length)show(h[0].object.userData.id)})}
+function updateFloor(f){if(!F)return;var ids=f.map(function(m){return m.machine_id}).sort(function(a,b){return a-b});
+ f.forEach(function(m){var k=m.machine_id,o=F.m[k]||(F.m[k]=mk3(k,ids.indexOf(k))),h=0.3+m.risk*3.2;
+  o.p.scale.y=h;o.p.position.y=0.4+h/2;o.bc.position.set(0.55,0.4+h+0.18,0.55);
+  [o.p,o.bc].forEach(function(x){x.material.color.setHex(HEX[m.status]);x.material.emissive.setHex(HEX[m.status]);x.material.emissiveIntensity=0.55});
+  o.st=m.status;o.b.material.emissive.setHex(String(k)===String(cur)?0x6b5513:0)})}
+
+/* ---- digital twin ---- */
+var OFF={comp1:[-1.5,0,0],comp2:[0,1.6,0],comp3:[1.5,0,0],comp4:[0.8,0,1.8]};
+function initTwin(){T=scene('#twin',{th:0.7,ph:1.15,r:10,min:5,max:18},new THREE.Vector3(0,1,0));T.g=new THREE.Group();T.s.add(T.g);T.mat={};T.x=T.e=T.sp=false;
+ ['comp1','comp2','comp3','comp4'].forEach(function(k){T.mat[k]=mat(0xb8962e,0.85,0.3)});
+ var dk=mat(0x25252b),M=THREE.Mesh,b=new M(new THREE.BoxGeometry(7.6,0.3,3.8),dk);b.position.y=-0.15;T.g.add(b);
+ var tr=new M(new THREE.BoxGeometry(7.8,0.06,4),mat(0xd4af37,0.9,0.3));tr.position.y=-0.32;T.g.add(tr);
+ var sh=new M(new THREE.CylinderGeometry(0.2,0.2,4.6,16),mat(0x6b6b75));sh.rotation.z=Math.PI/2;sh.position.set(0,1.1,0);T.g.add(sh);
+ var e=new M(new THREE.BoxGeometry(1.7,1.9,1.7),T.mat.comp1);e.position.set(-2.8,0.95,0);T.g.add(e);
+ for(var j=0;j<3;j++){var ln=new M(new THREE.BoxGeometry(0.05,1.5,0.05),dk);ln.position.set(-3.7,0.9,-0.6+j*0.6);T.g.add(ln)}
+ var r=new M(new THREE.CylinderGeometry(0.9,0.9,1.3,24),T.mat.comp2);r.rotation.z=Math.PI/2;r.position.set(-0.6,1.1,0);
+ for(var i=0;i<3;i++){var fn=new M(new THREE.BoxGeometry(2.2,1.2,0.1),T.mat.comp2);fn.rotation.y=i*Math.PI/3;r.add(fn)}T.g.add(r);
+ var p=new M(new THREE.TorusGeometry(0.85,0.22,12,32),T.mat.comp3);p.position.set(2.6,1.2,0);p.rotation.y=Math.PI/2;T.g.add(p);
+ var p2=new M(new THREE.CylinderGeometry(0.22,0.22,1.1,12),T.mat.comp3);p2.position.set(2.6,0.4,0);p.add(p2);p2.position.set(0,-0.8,0);p2.rotation.z=0;
+ var br=new M(new THREE.TorusGeometry(0.5,0.18,12,24),T.mat.comp4);br.position.set(1.0,1.1,0);br.rotation.y=Math.PI/2;T.g.add(br);
+ T.parts={comp1:e,comp2:r,comp3:p,comp4:br};T.bp={};for(var k in T.parts)T.bp[k]=T.parts[k].position.clone();
+ T.wire=function(on){T.g.traverse(function(o){if(o.material)o.material.wireframe=on})}}
+function updateTwin(r,last){if(!T)return;TL={rot:last.rotate,vib:last.vibration,part:r.part,status:r.status,risk:r.risk};
+ var mx=Math.max.apply(null,SN.map(function(s){return Math.abs(r.factors[s[0]])}).concat([0.01])),a=new THREE.Color(0xb8962e),b=new THREE.Color(0xef4444);
+ SN.forEach(function(s){var v=r.factors[s[0]],t=v>0?Math.min(v/mx,1):0,m=T.mat[s[3]];m.color.copy(a).lerp(b,t);m.emissive.setHex(0)})}
+function loop(t){requestAnimationFrame(loop);
+ if(F){fit(F);for(var k in F.m){var o=F.m[k];if(o.st=='critical'){o.bc.scale.setScalar(1+0.4*Math.sin(t/160));o.bc.material.emissiveIntensity=0.5+0.5*Math.sin(t/160)}else o.bc.scale.setScalar(1)}F.r.render(F.s,F.cam)}
+ if(T&&!$('#panel').hidden){fit(T);
+  if(T.sp){T.o.st.th+=0.006;T.o.place()}
+  for(var q in T.parts){var P=T.parts[q],B=T.bp[q],f=OFF[q];P.position.x+=(B.x+(T.e?f[0]:0)-P.position.x)*0.12;P.position.y+=(B.y+(T.e?f[1]:0)-P.position.y)*0.12;P.position.z+=(B.z+(T.e?f[2]:0)-P.position.z)*0.12}
+  if(TL){T.parts.comp2.rotation.x+=0.03+TL.rot/446*0.09;var am=Math.max(0,(TL.vib-40)/25)*0.05;T.g.position.x=(Math.random()-0.5)*am;T.g.position.y=(Math.random()-0.5)*am;
+   if(TL.risk>=0.3){var m=T.mat[TL.part];if(m){m.emissive.setHex(HEX[TL.status]);m.emissiveIntensity=0.3+0.5*Math.sin(t/180)}}}
+  T.r.render(T.s,T.cam)}}
+
+/* ---- 2D charts ---- */
+function spark(c,arr,col){var x=c.getContext('2d'),w=c.width,h=c.height,mn=Math.min.apply(null,arr),mx=Math.max.apply(null,arr),sp=(mx-mn)||1;x.clearRect(0,0,w,h);x.strokeStyle=col;x.lineWidth=2;x.beginPath();
+ arr.forEach(function(v,i){var X=i/(arr.length-1)*(w-4)+2,Y=h-4-(v-mn)/sp*(h-8);if(i)x.lineTo(X,Y);else x.moveTo(X,Y)});x.stroke()}
+function gauge(c,risk,col){var x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);x.lineWidth=16;x.lineCap='round';x.strokeStyle='#201a09';x.beginPath();x.arc(w/2,h-12,66,Math.PI,2*Math.PI);x.stroke();
+ x.strokeStyle=col;x.beginPath();x.arc(w/2,h-12,66,Math.PI,Math.PI+Math.PI*Math.max(0.02,risk));x.stroke();x.fillStyle='#f3d77a';x.font='bold 24px sans-serif';x.textAlign='center';x.fillText(pct(risk),w/2,h-18)}
+function dist(){var c=$('#hist'),x=c.getContext('2d'),w=c.width,h=c.height,b=[0,0,0,0,0,0,0,0,0,0];FL.forEach(function(m){b[Math.min(9,Math.floor(m.risk*10))]++});
+ var mx=Math.max.apply(null,b.concat([1]));x.clearRect(0,0,w,h);b.forEach(function(v,i){var bh=v/mx*(h-26);x.fillStyle=i>=6?'#ef4444':i>=3?'#f59e0b':'#d4af37';x.fillRect(i*40+6,h-16-bh,28,bh);x.fillStyle='#a79a73';x.font='10px sans-serif';x.fillText(i*10+'%',i*40+8,h-3)});
+ var pc={};FL.filter(function(m){return m.risk>=0.3}).forEach(function(m){pc[m.part_name]=(pc[m.part_name]||0)+1});
+ $('#parts').innerHTML='<small>Parts at risk: '+(Object.keys(pc).map(function(k){return k+' ('+pc[k]+')'}).join(' · ')||'none')+'</small>'}
+
+/* ---- fleet, alerts, table, savings ---- */
+function toast(t,s){var d=$('#toast');d.textContent=t;d.style.borderColor=CSS[s]||'#d4af37';d.style.display='block';clearTimeout(d.t);d.t=setTimeout(function(){d.style.display='none'},3500)}
+function push(t,s,q){AL.unshift({t:t,s:s,at:new Date().toLocaleTimeString()});AL=AL.slice(0,8);$('#al').innerHTML=AL.map(function(a){return'<div class="ev"><b style="color:'+CSS[a.s]+'">'+a.at+'</b> '+a.t+'</div>'}).join('');if(!q)toast(t,s)}
+function alerts(f){var first=!prev;if(first)prev={};f.forEach(function(m){var o=prev[m.machine_id];if(first?m.status=='critical':(o&&RK[m.status]>RK[o]))push(m.name+' is '+m.status+' · '+m.part_name,m.status,first);prev[m.machine_id]=m.status})}
+function table(){var q=$('#q').value.toLowerCase(),s=$('#flt').value;
+ $('#tbl').innerHTML='<tr><th>Machine</th><th>Part</th><th>Risk</th><th>RUL</th><th>Status</th></tr>'+FL.filter(function(m){return(!s||m.status==s)&&(!q||(m.name+' '+m.part_name).toLowerCase().indexOf(q)>-1)}).map(function(m){
+  return'<tr class="r" data-id="'+m.machine_id+'"><td>'+m.name+'</td><td>'+m.part_name+'</td><td style="width:30%"><div class="bar"><i style="width:'+m.risk*100+'%;background:'+CSS[m.status]+'"></i></div></td><td>'+(m.rul_days==null?'30+':m.rul_days)+'</td><td style="color:'+CSS[m.status]+'">'+m.status+'</td></tr>'}).join('');
+ Array.prototype.forEach.call(document.querySelectorAll('tr.r'),function(e){e.onclick=function(){show(e.dataset.id)}})}
+function sav(){var ex=FL.reduce(function(a,m){return a+m.risk},0),cost=ex*REC*(+$('#hpf').value||0)*(+$('#cph').value||0);
+ $('#sv').innerHTML='<div class="k"><div class="big">'+ex.toFixed(1)+'</div><small>expected failures / 7 days</small></div><div class="k"><div class="big">'+Math.round(cost).toLocaleString()+'</div><small>downtime cost avoidable</small></div>'}
+function kpis(f){var avg=Math.round(f.reduce(function(a,m){return a+m.health},0)/Math.max(f.length,1));
+ $('#cnt').innerHTML=['healthy','warning','critical'].map(function(s){return'<div class="k"><div class="big" style="color:'+CSS[s]+'">'+f.filter(function(m){return m.status==s}).length+'</div><small>'+s+'</small></div>'}).join('')+'<div class="k"><div class="big">'+avg+'</div><small>avg health</small></div><div class="k"><div class="big">'+f.filter(function(m){return m.anomaly}).length+'</div><small>anomalies</small></div>'}
+function fleet(){return api('/fleet').then(function(f){FL=f;alerts(f);kpis(f);table();dist();sav();updateFloor(f)})}
+
+/* ---- machine panel ---- */
+function draw(r){LR=r;$('#panel').hidden=false;$('#mt').textContent=r.name;
+ var a=$('#alr');a.hidden=!(r.status=='critical'||r.anomaly);a.textContent=r.status=='critical'?('Critical. Inspect: '+r.part_name+' within '+(r.rul_days==null?'a few':r.rul_days)+' days.'):'Unusual sensor behaviour detected.';
+ gauge($('#gauge'),r.risk,CSS[r.status]);$('#hs').textContent=r.health;$('#ru').textContent=r.rul_days==null?'30+':r.rul_days;$('#pt').textContent=r.part_name;
+ var last=r.readings[r.readings.length-1];
+ $('#sn').innerHTML=SN.map(function(s){return'<div class="k"><div class="big" style="font-size:20px">'+Math.round(last[s[0]])+'</div><small>'+s[1]+' ('+s[2]+')</small><canvas width="140" height="40" style="width:100%" id="sp_'+s[0]+'"></canvas></div>'}).join('');
+ SN.forEach(function(s){spark($('#sp_'+s[0]),r.readings.map(function(x){return x[s[0]]}),'#f3d77a')});
+ var mx=Math.max.apply(null,SN.map(function(s){return Math.abs(r.factors[s[0]])}).concat([0.01]));
+ $('#fx').innerHTML=SN.map(function(s){var v=r.factors[s[0]];return'<div class="sh"><span>'+s[1]+'</span><div class="bar"><i style="width:'+Math.abs(v)/mx*100+'%;background:'+(v>0?'#ef4444':'#22c55e')+'"></i></div><span>'+(v>0?'+':'')+v.toFixed(2)+'</span></div>'}).join('');
+ updateTwin(r,last)}
+function hist2(id){api('/machines/'+id+'/history').then(function(h){$('#hist2').innerHTML='<table><tr><th>Time</th><th>Risk</th><th>RUL</th></tr>'+h.slice(0,6).map(function(x){return'<tr><td>'+String(x.ts).slice(5,16)+'</td><td>'+pct(x.risk)+'</td><td>'+(x.rul==null?'30+':Math.round(x.rul*10)/10)+'</td></tr>'}).join('')+'</table>'}).catch(function(){})}
+function show(id){cur=id;stop();return api('/machines/'+id).then(function(r){draw(r);hist2(id);$('#md').value=iso(r.rul_days==null?14:Math.max(1,Math.floor(r.rul_days)));fleet();var p=$('#panel').getBoundingClientRect();window.scrollTo(0,window.pageYOffset+p.top-10)}).catch(err)}
+function stop(){clearInterval(timer);timer=null;$('#live').textContent='Start live stream'}
+$('#boost').oninput=function(e){$('#vb').textContent=e.target.value};
+$('#live').onclick=function(){if(!cur)return;if(timer)return stop();$('#live').textContent='Stop live stream';
+ timer=setInterval(function(){post('/machines/'+cur+'/simulate?vibration_boost='+$('#boost').value).then(function(r){draw(r);if(++tick%6==0){fleet();hist2(cur)}}).catch(function(e){stop();err(e)})},1500)};
+[['#bx','x'],['#be','e'],['#bs','sp']].forEach(function(b){$(b[0]).onclick=function(){if(!T)return;T[b[1]]=!T[b[1]];this.classList.toggle('on',T[b[1]]);if(b[1]=='x')T.wire(T.x)}});
+
+/* ---- planner (saved in this browser) ---- */
+function iso(d){var x=new Date();x.setDate(x.getDate()+d);return x.toISOString().slice(0,10)}
+function tasks(){try{return JSON.parse(localStorage.getItem('fm_tasks')||'[]')}catch(e){return[]}}
+function saveT(t){try{localStorage.setItem('fm_tasks',JSON.stringify(t))}catch(e){}renderT()}
+function addT(m,d){var t=tasks();if(t.some(function(x){return x.m==m.name&&!x.done}))return false;t.push({id:Date.now()+Math.random(),m:m.name,p:m.part_name,d:d,done:false});saveT(t);return true}
+function renderT(){var t=tasks().sort(function(a,b){return a.d<b.d?-1:1});$('#plan').innerHTML=t.length?'<table><tr><th></th><th>Date</th><th>Machine</th><th>Part</th><th></th></tr>'+t.map(function(x){return'<tr><td><input type="checkbox" data-d="'+x.id+'"'+(x.done?' checked':'')+'></td><td>'+x.d+'</td><td style="'+(x.done?'text-decoration:line-through;opacity:.5':'')+'">'+x.m+'</td><td>'+x.p+'</td><td><button class="o" data-x="'+x.id+'">x</button></td></tr>'}).join('')+'</table>':'<small>No tasks yet. Open a machine and schedule maintenance.</small>'}
+$('#plan').onclick=function(e){var d=e.target.dataset;if(d.d){saveT(tasks().map(function(x){if(String(x.id)==d.d)x.done=!x.done;return x}))}if(d.x)saveT(tasks().filter(function(x){return String(x.id)!=d.x}))};
+$('#addm').onclick=function(){if(LR&&$('#md').value){addT(LR,$('#md').value);toast('Maintenance scheduled for '+LR.name,'healthy')}};
+$('#schedc').onclick=function(){var n=0;FL.filter(function(m){return m.status=='critical'}).forEach(function(m){if(addT(m,iso(Math.max(1,Math.floor(m.rul_days||3)))))n++});toast(n+' maintenance task(s) added','warning')};
+
+/* ---- what-if, CSV, models ---- */
+var wt=null;function wif(){for(var i=0;i<4;i++)$('#v'+i).textContent=$('#w'+i).value;clearTimeout(wt);wt=setTimeout(function(){var o={volt:+$('#w0').value,rotate:+$('#w1').value,pressure:+$('#w2').value,vibration:+$('#w3').value},a=[];for(var i=0;i<24;i++)a.push(o);
+ post('/predict',{readings:a}).then(function(r){$('#wi').innerHTML='<b style="color:'+CSS[r.status]+'">'+r.status+'</b> · risk '+pct(r.risk)+' · '+r.part_name+' · RUL '+(r.rul_days==null?'30+':r.rul_days)+' days'}).catch(function(e){$('#wi').textContent='Error: '+e.message})},250)}
+for(var i=0;i<4;i++)$('#w'+i).oninput=wif;
+$('#csv').onchange=function(e){var rd=new FileReader();rd.onload=function(){var t=rd.result.trim().split(/\r?\n/),h=t[0].split(',').map(function(x){return x.trim()});
+ var rows=t.slice(1).slice(-48).map(function(l){var v=l.split(','),o={};['volt','rotate','pressure','vibration'].forEach(function(k){o[k]=+v[h.indexOf(k)]});return o});
+ post('/predict',{readings:rows}).then(function(r){$('#pr').innerHTML='CSV: <b style="color:'+CSS[r.status]+'">'+r.status+'</b> · risk '+pct(r.risk)+' · '+r.part_name}).catch(function(er){$('#pr').textContent='Error: '+er.message})};rd.readAsText(e.target.files[0])};
+$('#csvx').onclick=function(){var s='machine,part,risk,health,rul_days,status\n'+FL.map(function(m){return[m.name,m.part_name,m.risk,m.health,m.rul_days==null?'':m.rul_days,m.status].join(',')}).join('\n'),a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([s],{type:'text/csv'}));a.download='factorymind_fleet.csv';document.body.appendChild(a);a.click();a.remove()};
+$('#q').oninput=table;$('#flt').onchange=table;$('#cph').oninput=sav;$('#hpf').oninput=sav;
+$('#auto').onchange=function(){clearInterval(auto);auto=this.checked?setInterval(function(){fleet().catch(err)},15000):null};
+function info(){api('/models').then(function(m){REC=m.models[m.best].recall;sav();
+ $('#mdl').innerHTML='<table><tr><th>Model</th><th>Recall</th><th>Precision</th><th>PR-AUC</th><th>Missed</th><th>False alarms</th></tr>'+Object.keys(m.models).map(function(n){var x=m.models[n];return'<tr><td>'+(n===m.best?'<b>'+n+' (best)</b>':n)+'</td><td>'+x.recall.toFixed(2)+'</td><td>'+x.precision.toFixed(2)+'</td><td>'+x.pr_auc.toFixed(2)+'</td><td>'+x.false_negatives+'</td><td>'+x.false_positives+'</td></tr>'}).join('')+'</table>'}).catch(err);
+ api('/drift').then(function(d){$('#dr').innerHTML=Object.keys(d).map(function(k){var v=d[k];return'<div class="sh"><span>'+k+'</span><div class="bar"><i style="width:'+Math.min(v/0.4,1)*100+'%;background:'+(v>0.25?'#ef4444':'#d4af37')+'"></i></div><span>'+v+'</span></div>'}).join('')}).catch(err)}
+
+if(HAS3D){try{initFloor();initTwin();requestAnimationFrame(loop)}catch(e){HAS3D=false;err('3D could not start ('+e.message+'). The rest still works')}}else err('3D library did not load (internet needed for three.js). The rest still works');
+renderT();wif();fleet().catch(err);info();
+</script>
+<script>
+/* ===== FactoryMind: Page 2 (Analytics) + Page 3 (Operations) ===== */
+(function () {
+  var Q = function (s) { return document.querySelector(s); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var PAL = ['#f3d77a', '#ef4444', '#22c55e', '#38bdf8', '#c084fc', '#fb923c'];
+  var SEN = [['volt', 'Voltage'], ['rotate', 'Rotation'], ['pressure', 'Pressure'], ['vibration', 'Vibration']];
+  var byRisk = function (a, b) { return b.risk - a.risk; };
+  var money = function (v) { return Math.round(v).toLocaleString(); };
+  var cph = function () { return +(Q('#cph') || {}).value || 5000; };
+  var hpf = function () { return +(Q('#hpf') || {}).value || 8; };
+  var cost = function (m) { return m.risk * (typeof REC === 'number' ? REC : 0.5) * hpf() * cph(); };
+
+  var st = document.createElement('style');
+  st.textContent =
+    '.nav{position:sticky;top:0;z-index:6;display:flex;gap:8px;padding:8px 0;margin-bottom:8px;background:linear-gradient(#060608 75%,transparent)}' +
+    '.nav button{flex:1;padding:10px 6px;background:#0b0b0d;color:var(--g);border:1px solid var(--bd)}.nav button.on{background:linear-gradient(#f3d77a,#b8891a);color:#1a1200}' +
+    'canvas.cv{width:100%;display:block}.rk{display:grid;grid-template-columns:78px 1fr 46px;gap:8px;align-items:center;margin:5px 0;font-size:13px;cursor:pointer}' +
+    '.lg{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font-size:12px;color:var(--mu)}.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px}' +
+    '.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cal div{min-height:38px;border:1px solid var(--bd);border-radius:6px;padding:3px;font-size:11px;color:var(--mu);cursor:pointer}' +
+    '.cal .h{min-height:0;border:0;text-align:center;cursor:default;color:var(--g)}.cal .t{border-color:var(--g)}.cal .s{background:#d4af3722}.cal b{color:var(--tx);font-size:12px}' +
+    '.dt{display:inline-block;width:7px;height:7px;border-radius:50%;margin:1px;background:var(--g)}.dt.o{background:var(--cr)}.dt.d{background:var(--ok)}' +
+    '.tk{border:1px solid var(--bd);border-radius:8px;padding:8px;margin:6px 0;background:#0b0b0d;font-size:13px}.tk small{display:block}.pb{font-size:11px;padding:1px 6px;border-radius:6px;border:1px solid var(--bd);margin-left:6px}' +
+    '.tk button{padding:3px 8px;font-size:12px;margin-right:4px}.col{flex:1 1 230px}.col h2{margin-top:0}' +
+    '.f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.f2 label{font-size:12px;color:var(--mu)}.f2 input,.f2 select{width:100%}';
+  document.head.appendChild(st);
+
+  /* ---------- page shell ---------- */
+  var wrap = Q('.w'), pg1 = document.createElement('div'); pg1.id = 'pg1';
+  while (wrap.firstChild) pg1.appendChild(wrap.firstChild);
+  var nav = document.createElement('div'); nav.className = 'nav';
+  ['Overview', 'Analytics', 'Operations'].forEach(function (n, i) { var b = document.createElement('button'); b.textContent = n; b.onclick = function () { go(i); }; nav.appendChild(b); });
+  var pg2 = document.createElement('div'), pg3 = document.createElement('div'); pg2.id = 'pg2'; pg3.id = 'pg3'; pg2.hidden = pg3.hidden = true;
+  wrap.appendChild(nav); wrap.appendChild(pg1); wrap.appendChild(pg2); wrap.appendChild(pg3);
+
+  pg2.innerHTML =
+    '<div class="row" style="align-items:center"><div style="flex:3 1 220px"><h1 style="font-size:22px">ANALYTICS</h1><small id="a_ts"></small></div><div style="flex:1 1 100px;text-align:right"><button id="a_rf">Refresh</button></div></div><br>' +
+    '<div class="row" id="a_k"></div><br>' +
+    '<div class="row two"><div class="c"><h2>Risk vs health map</h2><canvas class="cv" id="a_sc" data-h="270"></canvas><small>Each dot is a machine. Tap a dot to open it.</small></div>' +
+    '<div class="c"><h2>Top risk machines</h2><div id="a_rank"></div></div></div>' +
+    '<div class="row two"><div class="c"><h2>Parts at risk</h2><canvas class="cv" id="a_dn" data-h="210"></canvas><div class="lg" id="a_dnl"></div></div>' +
+    '<div class="c"><h2>Money at risk (next 7 days)</h2><div id="a_cost"></div></div></div>' +
+    '<div class="c"><h2>Risk trend, last 24h: top 5 machines</h2><canvas class="cv" id="a_tr" data-h="240"></canvas><div class="lg" id="a_trl"></div></div>' +
+    '<div class="row two"><div class="c"><h2>Sensor correlation</h2><canvas class="cv" id="a_hm" data-h="270"></canvas><small>Red = rise together, blue = move opposite. Built from the last 24 hours of all machines.</small></div>' +
+    '<div class="c"><h2>Fleet sensor trends (24h)</h2><div id="a_sn"></div></div></div>' +
+    '<div class="row two"><div class="c"><h2>Model scorecard</h2><canvas class="cv" id="a_md" data-h="230"></canvas><div class="lg" id="a_mdl"></div><div id="a_mdt"></div></div>' +
+    '<div class="c"><h2>Drift monitor (PSI)</h2><div id="a_dr"></div><small>Marker = 0.25. Beyond it, retrain the model.</small></div></div>';
+
+  pg3.innerHTML =
+    '<div class="row" style="align-items:center"><div style="flex:3 1 220px"><h1 style="font-size:22px">OPERATIONS</h1><small>Maintenance command center</small></div><div style="flex:1 1 100px;text-align:right"><button id="o_rf">Refresh</button></div></div><br>' +
+    '<div class="row" id="o_k"></div><br>' +
+    '<div class="c"><h2>Priority queue</h2><div id="o_q"></div></div>' +
+    '<div class="row two"><div class="c"><h2>Maintenance calendar</h2><div class="tb" style="align-items:center"><button class="o" id="o_pm">&lt;</button><b id="o_mn" style="flex:1;text-align:center"></b><button class="o" id="o_nm">&gt;</button></div><div class="cal" id="o_cal"></div><div id="o_day" class="mu" style="margin-top:8px"></div></div>' +
+    '<div class="c"><h2>New task</h2><div class="f2"><label>Machine<select id="o_fm"></select></label><label>Part<input type="text" id="o_fp"></label><label>Date<input type="date" id="o_fd"></label><label>Technician<input type="text" id="o_ft" list="o_tl" placeholder="name"></label><label>Priority<select id="o_fr"><option>high</option><option selected>medium</option><option>low</option></select></label><label>&nbsp;<button id="o_fa" style="width:100%">Add task</button></label></div><datalist id="o_tl"></datalist>' +
+    '<h2 style="margin-top:14px">Technician workload</h2><div id="o_wl"></div></div></div>' +
+    '<div class="c"><h2>Task board</h2><div class="row" id="o_bd"></div></div>' +
+    '<div class="c"><h2>Incident log</h2><div class="tb"><button class="o" id="o_ex">Export tasks + log CSV</button><button class="o" id="o_cl">Clear log</button></div><div id="o_log" style="max-height:260px;overflow:auto"></div></div>';
+
+  /* ---------- helpers ---------- */
+  function cv(id) { var c = document.getElementById(id), d = window.devicePixelRatio || 1, w = c.clientWidth || 300, h = +c.dataset.h || 200;
+    c.width = w * d; c.height = h * d; c.style.height = h + 'px'; var x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, w, h); return { x: x, w: w, h: h, c: c }; }
+  function legend(id, items) { document.getElementById(id).innerHTML = items.map(function (i) { return '<span><i style="background:' + i[1] + '"></i>' + esc(i[0]) + '</span>'; }).join(''); }
+  function kpi(a) { return a.map(function (k) { return '<div class="k"><div class="big"' + (k[2] ? ' style="color:' + k[2] + '"' : '') + '>' + k[0] + '</div><small>' + k[1] + '</small></div>'; }).join(''); }
+  function pearson(a, b) { var n = Math.min(a.length, b.length); if (n < 3) return 0; var ma = 0, mb = 0, i; for (i = 0; i < n; i++) { ma += a[i]; mb += b[i]; } ma /= n; mb /= n;
+    var s = 0, va = 0, vb = 0; for (i = 0; i < n; i++) { s += (a[i] - ma) * (b[i] - mb); va += (a[i] - ma) * (a[i] - ma); vb += (b[i] - mb) * (b[i] - mb); } return va && vb ? s / Math.sqrt(va * vb) : 0; }
+  function openM(id) { go(0); show(id); }
+  function csvDownload(name, text) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+
+  /* ---------- incident log (hooks the existing push()) ---------- */
+  function logs() { try { return JSON.parse(localStorage.getItem('fm_log') || '[]'); } catch (e) { return []; } }
+  var _push = window.push;
+  window.push = function (t, s, q) { if (!q) { try { var l = logs(); l.unshift({ t: t, s: s, at: new Date().toISOString() }); localStorage.setItem('fm_log', JSON.stringify(l.slice(0, 100))); } catch (e) {} } return _push(t, s, q); };
+
+  /* ---------- navigation ---------- */
+  var cur_pg = 0, NAMES = ['overview', 'analytics', 'operations'];
+  function go(i) { cur_pg = i; pg1.hidden = i !== 0; pg2.hidden = i !== 1; pg3.hidden = i !== 2;
+    [].forEach.call(nav.children, function (b, k) { b.classList.toggle('on', k === i); }); try { history.replaceState(null, '', '#' + NAMES[i]); } catch (e) {}
+    window.scrollTo(0, 0); if (i === 1) refreshA(); if (i === 2) refreshO(); }
+  window.fmGo = go;
+  var rz; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { if (cur_pg === 1) renderA(); }, 250); });
+
+  /* ============================ PAGE 2: ANALYTICS ============================ */
+  function refreshA() { fleet().then(renderA).catch(err); }
+  Q('#a_rf').onclick = refreshA;
+
+  function renderA() {
+    if (cur_pg !== 1) return; var F = FL.slice().sort(byRisk);
+    Q('#a_ts').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    var risky = F.filter(function (m) { return m.risk >= 0.3; }), ex = F.reduce(function (a, m) { return a + m.risk; }, 0), tot = F.reduce(function (a, m) { return a + cost(m); }, 0);
+    Q('#a_k').innerHTML = kpi([[F.length, 'machines'], [risky.length, 'at risk (30%+)', risky.length ? '#f59e0b' : null], [ex.toFixed(1), 'expected failures / 7d'], [money(tot), 'cost exposure']]);
+    if (!F.length) return;
+
+    Q('#a_rank').innerHTML = F.slice(0, 10).map(function (m) { return '<div class="rk" data-id="' + esc(m.machine_id) + '"><span>' + esc(m.name) + '</span><div class="bar"><i style="width:' + m.risk * 100 + '%;background:' + CSS[m.status] + '"></i></div><b>' + pct(m.risk) + '</b></div>'; }).join('');
+    [].forEach.call(document.querySelectorAll('#a_rank .rk'), function (e) { e.onclick = function () { openM(e.dataset.id); }; });
+    Q('#a_cost').innerHTML = F.slice().sort(function (a, b) { return cost(b) - cost(a); }).slice(0, 6).map(function (m) { var mx = Math.max(cost(F.slice().sort(function (a, b) { return cost(b) - cost(a); })[0]), 1); return '<div class="rk" data-id="' + esc(m.machine_id) + '" style="grid-template-columns:78px 1fr 70px"><span>' + esc(m.name) + '</span><div class="bar"><i style="width:' + cost(m) / mx * 100 + '%;background:#d4af37"></i></div><b>' + money(cost(m)) + '</b></div>'; }).join('') + '<small>Risk x model recall x downtime hours x cost per hour (inputs on Overview page).</small>';
+    [].forEach.call(document.querySelectorAll('#a_cost .rk'), function (e) { e.onclick = function () { openM(e.dataset.id); }; });
+
+    scatter(F); donut(F);
+    api('/readings?n=24').then(function (R) { if (cur_pg !== 1) return; var D = Object.keys(R).map(function (k) { return { readings: R[k] }; }); heat(D); sensors(D); })
+      .catch(function () { Q('#a_sn').innerHTML = '<small>Sensor charts need the /api/readings endpoint (see backend update).</small>'; });
+    Promise.all(F.slice(0, 5).map(function (m) { return api('/machines/' + m.machine_id + '/trend?k=24').then(function (v) { return { m: m, h: v.map(function (r) { return { risk: r }; }) }; }).catch(function () { return null; }); })).then(function (H) { if (cur_pg === 1) trend(H.filter(Boolean)); });
+    api('/models').then(function (m) { if (cur_pg === 1) models(m); }).catch(err);
+    api('/drift').then(function (d) { if (cur_pg === 1) drift(d); }).catch(err);
+  }
+
+  function scatter(F) { var o = cv('a_sc'), x = o.x, L = 36, T = 10, R = 10, B = 26, pw = o.w - L - R, ph = o.h - T - B, pts = [];
+    x.fillStyle = '#ef444418'; x.fillRect(L + pw * 0.7, T, pw * 0.3, ph); x.strokeStyle = '#33290f'; x.fillStyle = '#a79a73'; x.font = '10px sans-serif'; x.textAlign = 'center';
+    for (var i = 0; i <= 4; i++) { var gx = L + pw * i / 4, gy = T + ph * i / 4; x.beginPath(); x.moveTo(gx, T); x.lineTo(gx, T + ph); x.moveTo(L, gy); x.lineTo(L + pw, gy); x.stroke(); x.fillText(i * 25 + '%', gx, o.h - 10); x.textAlign = 'right'; x.fillText(100 - i * 25, L - 4, gy + 3); x.textAlign = 'center'; }
+    x.fillText('failure risk', L + pw / 2, o.h - 0); F.forEach(function (m) { var px = L + m.risk * pw, py = T + (1 - m.health / 100) * ph; pts.push({ x: px, y: py, id: m.machine_id });
+      x.fillStyle = CSS[m.status] + 'cc'; x.beginPath(); x.arc(px, py, 6, 0, 7); x.fill(); x.strokeStyle = '#000'; x.stroke(); });
+    o.c.onclick = function (e) { var b = o.c.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top, best = null, bd = 18; pts.forEach(function (p) { var d = Math.hypot(p.x - mx, p.y - my); if (d < bd) { bd = d; best = p; } }); if (best) openM(best.id); }; }
+
+  function donut(F) { var o = cv('a_dn'), x = o.x, c = {}; F.filter(function (m) { return m.risk >= 0.3; }).forEach(function (m) { c[m.part_name] = (c[m.part_name] || 0) + 1; });
+    var k = Object.keys(c), tot = k.reduce(function (a, n) { return a + c[n]; }, 0);
+    if (!tot) { x.fillStyle = '#a79a73'; x.font = '13px sans-serif'; x.textAlign = 'center'; x.fillText('No parts at elevated risk', o.w / 2, o.h / 2); Q('#a_dnl').innerHTML = ''; return; }
+    var cx = o.w / 2, cy = o.h / 2, r = Math.min(cx, cy) - 8, a0 = -Math.PI / 2;
+    k.forEach(function (n, i) { var a1 = a0 + c[n] / tot * Math.PI * 2; x.fillStyle = PAL[i % PAL.length]; x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, r, a0, a1); x.fill(); a0 = a1; });
+    x.fillStyle = '#101013'; x.beginPath(); x.arc(cx, cy, r * 0.58, 0, 7); x.fill(); x.fillStyle = '#f3d77a'; x.font = 'bold 22px sans-serif'; x.textAlign = 'center'; x.fillText(tot, cx, cy + 4); x.font = '10px sans-serif'; x.fillStyle = '#a79a73'; x.fillText('machines', cx, cy + 18);
+    legend('a_dnl', k.map(function (n, i) { return [n + ' (' + c[n] + ')', PAL[i % PAL.length]]; })); }
+
+  function trend(H) { var o = cv('a_tr'), x = o.x, L = 34, T = 8, R = 8, B = 8, pw = o.w - L - R, ph = o.h - T - B;
+    x.font = '10px sans-serif'; x.fillStyle = '#a79a73'; x.textAlign = 'right';
+    [[0, '#33290f'], [0.4, '#f59e0b66'], [0.7, '#ef444466'], [1, '#33290f']].forEach(function (g) { var y = T + (1 - g[0]) * ph; x.strokeStyle = g[1]; x.setLineDash(g[0] > 0 && g[0] < 1 ? [5, 4] : []); x.beginPath(); x.moveTo(L, y); x.lineTo(L + pw, y); x.stroke(); x.fillText(Math.round(g[0] * 100) + '%', L - 4, y + 3); }); x.setLineDash([]);
+    H.forEach(function (e, i) { var h = e.h; if (h.length < 2) return; x.strokeStyle = PAL[i % PAL.length]; x.lineWidth = 2; x.beginPath();
+      h.forEach(function (p, j) { var px = L + j / (h.length - 1) * pw, py = T + (1 - Math.min(1, p.risk)) * ph; if (j) x.lineTo(px, py); else x.moveTo(px, py); }); x.stroke(); }); x.lineWidth = 1;
+    legend('a_trl', H.map(function (e, i) { return [e.m.name, PAL[i % PAL.length]]; })); if (!H.length) Q('#a_trl').textContent = 'Trend needs the /api/machines/{id}/trend endpoint (see backend update).'; }
+
+  function heat(D) { var o = cv('a_hm'), x = o.x, n = 4, L = 70, T = 24, cw = (o.w - L - 6) / n, ch = (o.h - T - 6) / n, ser = {};
+    SEN.forEach(function (s) { ser[s[0]] = []; D.forEach(function (d) { d.readings.forEach(function (r) { ser[s[0]].push(+r[s[0]]); }); }); });
+    x.font = '11px sans-serif'; SEN.forEach(function (a, i) { x.fillStyle = '#a79a73'; x.textAlign = 'right'; x.fillText(a[1], L - 6, T + i * ch + ch / 2 + 4); x.textAlign = 'center'; x.fillText(a[1].slice(0, 5), L + i * cw + cw / 2, T - 8);
+      SEN.forEach(function (b, j) { var v = i === j ? 1 : pearson(ser[a[0]], ser[b[0]]); x.fillStyle = v >= 0 ? 'rgba(239,68,68,' + Math.abs(v) * 0.85 + ')' : 'rgba(56,189,248,' + Math.abs(v) * 0.85 + ')'; x.fillRect(L + j * cw + 1, T + i * ch + 1, cw - 2, ch - 2);
+        x.fillStyle = '#f1ead6'; x.fillText(v.toFixed(2), L + j * cw + cw / 2, T + i * ch + ch / 2 + 4); }); }); }
+
+  function sensors(D) { var h = ''; SEN.forEach(function (s, i) { h += '<small>' + s[1] + '</small><canvas class="cv" id="a_s' + i + '" data-h="70"></canvas>'; }); Q('#a_sn').innerHTML = h;
+    SEN.forEach(function (s, i) { var o = cv('a_s' + i), x = o.x, arrs = D.map(function (d) { return d.readings.map(function (r) { return +r[s[0]]; }); }).filter(function (a) { return a.length > 1; });
+      if (!arrs.length) return; var n = Math.min.apply(null, arrs.map(function (a) { return a.length; })), all = [], mean = [];
+      for (var t = 0; t < n; t++) { var sum = 0; arrs.forEach(function (a) { var v = a[a.length - n + t]; sum += v; all.push(v); }); mean.push(sum / arrs.length); }
+      var mn = Math.min.apply(null, all), mx = Math.max.apply(null, all), sp = (mx - mn) || 1, Y = function (v) { return o.h - 6 - (v - mn) / sp * (o.h - 14); }, X = function (k) { return 4 + k / (n - 1) * (o.w - 8); };
+      arrs.forEach(function (a) { x.strokeStyle = '#d4af3733'; x.beginPath(); for (var k = 0; k < n; k++) { var v = a[a.length - n + k]; if (k) x.lineTo(X(k), Y(v)); else x.moveTo(X(k), Y(v)); } x.stroke(); });
+      x.strokeStyle = '#f3d77a'; x.lineWidth = 2; x.beginPath(); mean.forEach(function (v, k) { if (k) x.lineTo(X(k), Y(v)); else x.moveTo(X(k), Y(v)); }); x.stroke(); x.lineWidth = 1;
+      x.fillStyle = '#a79a73'; x.font = '10px sans-serif'; x.textAlign = 'right'; x.fillText('avg ' + Math.round(mean[mean.length - 1]), o.w - 4, 11); }); }
+
+  function models(m) { var o = cv('a_md'), x = o.x, names = Object.keys(m.models), keys = [['recall', 'Recall'], ['precision', 'Precision'], ['pr_auc', 'PR-AUC']], L = 8, T = 10, B = 28, gw = (o.w - L * 2) / names.length, ph = o.h - T - B;
+    x.strokeStyle = '#33290f'; for (var g = 0; g <= 4; g++) { x.beginPath(); x.moveTo(L, T + ph * g / 4); x.lineTo(o.w - L, T + ph * g / 4); x.stroke(); }
+    names.forEach(function (n, i) { var bw = (gw - 16) / keys.length; keys.forEach(function (k, j) { var v = +m.models[n][k[0]] || 0, bh = v * ph, bx = L + i * gw + 8 + j * bw; x.fillStyle = PAL[j]; x.fillRect(bx, T + ph - bh, bw - 3, bh); x.fillStyle = '#f1ead6'; x.font = '10px sans-serif'; x.textAlign = 'center'; x.fillText(v.toFixed(2), bx + (bw - 3) / 2, T + ph - bh - 3); });
+      x.fillStyle = n === m.best ? '#f3d77a' : '#a79a73'; x.font = (n === m.best ? 'bold ' : '') + '11px sans-serif'; x.textAlign = 'center'; x.fillText((n === m.best ? '* ' : '') + n, L + i * gw + gw / 2, o.h - 8); });
+    legend('a_mdl', keys.map(function (k, j) { return [k[1], PAL[j]]; }));
+    Q('#a_mdt').innerHTML = '<table><tr><th>Model</th><th>Missed failures</th><th>False alarms</th></tr>' + names.map(function (n) { var e = m.models[n]; return '<tr><td>' + esc(n) + (n === m.best ? ' (best)' : '') + '</td><td>' + e.false_negatives + '</td><td>' + e.false_positives + '</td></tr>'; }).join('') + '</table>'; }
+
+  function drift(d) { var k = Object.keys(d); Q('#a_dr').innerHTML = k.map(function (n) { var v = +d[n]; return '<div class="sh" style="grid-template-columns:90px 1fr 54px"><span>' + esc(n) + '</span><div class="bar" style="position:relative"><i style="width:' + Math.min(v / 0.4, 1) * 100 + '%;background:' + (v > 0.25 ? '#ef4444' : '#d4af37') + '"></i><u style="position:absolute;left:62.5%;top:-2px;height:14px;border-left:2px dashed #f1ead6"></u></div><span>' + v + '</span></div>'; }).join('') +
+    (k.some(function (n) { return d[n] > 0.25; }) ? '<div class="al" style="margin-top:10px">Drift is high. Retrain the model on recent data.</div>' : '<small>All sensors stable.</small>'); }
+
+  /* ============================ PAGE 3: OPERATIONS ============================ */
+  var calY = new Date().getFullYear(), calM = new Date().getMonth(), selDay = null;
+  var today = function () { return iso(0); };
+  function refreshO() { fleet().then(renderO).catch(err); }
+  Q('#o_rf').onclick = refreshO;
+
+  function renderO() {
+    if (cur_pg !== 2) return; var F = FL.slice().sort(byRisk), T = tasks(), td = today(), open = T.filter(function (t) { return !t.done; }), over = open.filter(function (t) { return t.d < td; });
+    var prot = open.reduce(function (a, t) { var m = F.filter(function (x) { return x.name === t.m; })[0]; return a + (m ? cost(m) : 0); }, 0), avail = F.length ? Math.round(F.filter(function (m) { return m.status !== 'critical'; }).length / F.length * 100) : 100;
+    Q('#o_k').innerHTML = kpi([[avail + '%', 'fleet availability', avail < 80 ? '#ef4444' : '#22c55e'], [open.length, 'open tasks'], [over.length, 'overdue', over.length ? '#ef4444' : null], [money(prot), 'cost protected by open tasks']]);
+
+    var q = F.filter(function (m) { return m.risk >= 0.3; }).slice(0, 8);
+    Q('#o_q').innerHTML = q.length ? '<table><tr><th>Machine</th><th>Risk</th><th>Action</th><th></th></tr>' + q.map(function (m) { var d = m.rul_days == null ? 14 : Math.max(1, Math.floor(m.rul_days)), has = open.some(function (t) { return t.m === m.name; });
+      return '<tr><td>' + esc(m.name) + '</td><td style="color:' + CSS[m.status] + '">' + pct(m.risk) + '</td><td>' + (m.status === 'critical' ? 'Inspect ' + esc(m.part_name) + ' within ' + d + 'd' : 'Plan check of ' + esc(m.part_name)) + '</td><td style="white-space:nowrap"><button class="o" data-o="' + esc(m.machine_id) + '">Open</button> ' + (has ? '<small>scheduled</small>' : '<button data-s="' + esc(m.machine_id) + '" data-d="' + d + '">Schedule</button>') + '</td></tr>'; }).join('') + '</table>' : '<small>All clear. No machine above 30% risk.</small>';
+    [].forEach.call(document.querySelectorAll('#o_q button'), function (b) { b.onclick = function () { if (b.dataset.o) return openM(b.dataset.o); var m = FL.filter(function (x) { return String(x.machine_id) === b.dataset.s; })[0]; if (m && addT(m, iso(+b.dataset.d))) toast('Scheduled ' + m.name, 'healthy'); renderO(); }; });
+
+    var fm = Q('#o_fm'), sel = fm.value; fm.innerHTML = FL.map(function (m) { return '<option value="' + esc(m.machine_id) + '">' + esc(m.name) + '</option>'; }).join(''); if (sel) fm.value = sel;
+    if (!Q('#o_fd').value) Q('#o_fd').value = iso(7); fillPart();
+    Q('#o_tl').innerHTML = Object.keys(T.reduce(function (a, t) { if (t.a) a[t.a] = 1; return a; }, {})).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+    workload(open); board(T, td); calendar(T, td); dayList(T); logView();
+  }
+  function fillPart() { var m = FL.filter(function (x) { return String(x.machine_id) === Q('#o_fm').value; })[0]; if (m) Q('#o_fp').value = m.part_name; }
+  Q('#o_fm').onchange = fillPart;
+  Q('#o_fa').onclick = function () { var m = FL.filter(function (x) { return String(x.machine_id) === Q('#o_fm').value; })[0], d = Q('#o_fd').value; if (!m || !d) return toast('Pick machine and date', 'warning');
+    saveT(tasks().concat([{ id: Date.now() + Math.random(), m: m.name, p: Q('#o_fp').value || m.part_name, d: d, done: false, a: Q('#o_ft').value.trim(), pr: Q('#o_fr').value }])); toast('Task added', 'healthy'); renderO(); };
+
+  function workload(open) { var w = {}; open.forEach(function (t) { var k = t.a || 'Unassigned'; w[k] = (w[k] || 0) + 1; }); var k = Object.keys(w), mx = Math.max.apply(null, k.map(function (n) { return w[n]; }).concat([1]));
+    Q('#o_wl').innerHTML = k.length ? k.map(function (n) { return '<div class="rk" style="cursor:default"><span>' + esc(n) + '</span><div class="bar"><i style="width:' + w[n] / mx * 100 + '%;background:' + (n === 'Unassigned' ? '#f59e0b' : '#d4af37') + '"></i></div><b>' + w[n] + '</b></div>'; }).join('') : '<small>No open tasks.</small>'; }
+
+  var PRC = { high: '#ef4444', medium: '#f59e0b', low: '#22c55e' };
+  function card(t, od) { return '<div class="tk"><b>' + esc(t.m) + '</b> <span class="pb" style="color:' + (PRC[t.pr] || '#a79a73') + '">' + esc(t.pr || 'medium') + '</span><small>' + esc(t.p) + ' · ' + esc(t.d) + (od ? ' · overdue' : '') + ' · ' + esc(t.a || 'unassigned') + '</small><div style="margin-top:6px"><button class="o" data-t="' + t.id + '">' + (t.done ? 'Reopen' : 'Done') + '</button><button class="o" data-x="' + t.id + '">Delete</button></div></div>'; }
+  function board(T, td) { var cols = [['Overdue', T.filter(function (t) { return !t.done && t.d < td; }), true], ['Upcoming', T.filter(function (t) { return !t.done && t.d >= td; }), false], ['Done', T.filter(function (t) { return t.done; }), false]];
+    Q('#o_bd').innerHTML = cols.map(function (c) { return '<div class="col"><h2>' + c[0] + ' (' + c[1].length + ')</h2>' + (c[1].sort(function (a, b) { return a.d < b.d ? -1 : 1; }).map(function (t) { return card(t, c[2]); }).join('') || '<small>Nothing here</small>') + '</div>'; }).join('');
+    [].forEach.call(document.querySelectorAll('#o_bd button'), function (b) { b.onclick = function () { var id = b.dataset.t || b.dataset.x; saveT(b.dataset.t ? tasks().map(function (t) { if (String(t.id) === id) t.done = !t.done; return t; }) : tasks().filter(function (t) { return String(t.id) !== id; })); renderO(); }; }); }
+
+  function calendar(T, td) { var first = new Date(calY, calM, 1), days = new Date(calY, calM + 1, 0).getDate(), h = '';
+    Q('#o_mn').textContent = first.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(function (d) { h += '<div class="h">' + d + '</div>'; }); for (var i = 0; i < first.getDay(); i++) h += '<div style="border:0;cursor:default"></div>';
+    for (var d = 1; d <= days; d++) { var ds = calY + '-' + String(calM + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'), ts = T.filter(function (t) { return t.d === ds; });
+      h += '<div data-d="' + ds + '" class="' + (ds === td ? 't ' : '') + (ds === selDay ? 's' : '') + '"><b>' + d + '</b><br>' + ts.slice(0, 4).map(function (t) { return '<span class="dt ' + (t.done ? 'd' : (t.d < td ? 'o' : '')) + '"></span>'; }).join('') + '</div>'; }
+    Q('#o_cal').innerHTML = h; [].forEach.call(document.querySelectorAll('#o_cal [data-d]'), function (e) { e.onclick = function () { selDay = e.dataset.d; calendar(tasks(), today()); dayList(tasks()); }; }); }
+  function dayList(T) { var l = selDay ? T.filter(function (t) { return t.d === selDay; }) : []; Q('#o_day').innerHTML = selDay ? '<b>' + esc(selDay) + '</b>' + (l.length ? l.map(function (t) { return '<div class="ev">' + esc(t.m) + ' · ' + esc(t.p) + ' · ' + esc(t.a || 'unassigned') + (t.done ? ' (done)' : '') + '</div>'; }).join('') : '<div class="ev">No tasks</div>') : 'Tap a day to see its tasks.'; }
+  Q('#o_pm').onclick = function () { if (--calM < 0) { calM = 11; calY--; } calendar(tasks(), today()); };
+  Q('#o_nm').onclick = function () { if (++calM > 11) { calM = 0; calY++; } calendar(tasks(), today()); };
+
+  function logView() { var l = logs(); Q('#o_log').innerHTML = l.length ? l.map(function (e) { return '<div class="ev"><b style="color:' + (CSS[e.s] || '#d4af37') + '">' + esc(e.at.slice(5, 16).replace('T', ' ')) + '</b> ' + esc(e.t) + '</div>'; }).join('') : '<small>No incidents recorded yet. New alerts will appear here.</small>'; }
+  Q('#o_cl').onclick = function () { localStorage.removeItem('fm_log'); logView(); };
+  Q('#o_ex').onclick = function () { var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+    csvDownload('factorymind_ops.csv', 'TASKS\nmachine,part,date,technician,priority,done\n' + tasks().map(function (t) { return [t.m, t.p, t.d, t.a, t.pr, t.done].map(q).join(','); }).join('\n') + '\n\nINCIDENTS\ntime,level,message\n' + logs().map(function (e) { return [e.at, e.s, e.t].map(q).join(','); }).join('\n')); };
+
+  var h0 = (location.hash || '').slice(1), i0 = NAMES.indexOf(h0); nav.children[0].classList.add('on'); if (i0 > 0) go(i0);
+})();
+</script>
+</body></html>
