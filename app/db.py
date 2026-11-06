@@ -62,3 +62,8 @@ def save_prediction(m, r):
 def history(m, n=50):
     with conn() as c:
         return pd.read_sql("select ts,risk,rul,part from predictions where machine_id=? order by id desc limit ?", c, params=(m, n)).to_dict("records")
+
+
+def readings_all(n=24):
+    """Last n readings of every machine (oldest first). Read-only, so it never writes predictions."""
+    return {str(m): recent(m, n).round(1).to_dict("records") for m in machines()}
