@@ -37,7 +37,7 @@ class Reading(BaseModel):
 
 
 class PredictIn(BaseModel):
-    readings: List[Reading] = Field(min_items=1, max_items=48)
+    readings: List[Reading] = Field(min_length=1, max_length=48)
 
 
 def name(m):
@@ -89,12 +89,27 @@ def simulate(m: int, vibration_boost: float = 0.0):
 @app.post("/api/predict")
 def predict(p: PredictIn):
     """Manual entry or CSV upload. Send up to 48 readings, oldest first."""
-    return S["p"].predict(pd.DataFrame([r.dict() for r in p.readings]))
+    return S["p"].predict(pd.DataFrame([r.model_dump() for r in p.readings]))
 
 
 @app.get("/api/machines/{m}/history")
 def history(m: int):
     return db.history(m)
+
+
+@app.get("/api/readings")
+def readings(n: int = 24):
+    """Last n readings of all machines in one call (read-only), for the Analytics page."""
+    return db.readings_all(max(1, min(n, 48)))
+
+
+@app.get("/api/machines/{m}/trend")
+def trend(m: int, k: int = 24):
+    """Risk of the last k hours, computed from stored readings (no database writes)."""
+    df = db.recent(m, 48)
+    if df.empty:
+        raise HTTPException(404, "Unknown machine")
+    return S["p"].risk_series(df, max(2, min(k, 48)))
 
 
 @app.get("/api/drift")
