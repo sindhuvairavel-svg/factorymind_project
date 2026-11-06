@@ -55,6 +55,14 @@ class Predictor:
             "horizon_days": 7,
         }
 
+    def risk_series(self, df: pd.DataFrame, k: int = 24) -> list:
+        """Calibrated risk at each of the last k hours (feature windows use only past readings)."""
+        d = df[SENSORS].reset_index(drop=True).astype(float)
+        d["machineID"] = 0
+        x = add_features(d)[self.b["features"]].iloc[-k:]
+        r = self.cal.transform(self.clf.predict_proba(x)[:, 1])
+        return [round(float(v), 4) for v in r]
+
     def drift(self, df: pd.DataFrame) -> dict:
         """Population Stability Index of live data vs training data. Above 0.25 means retrain."""
         out = {}
